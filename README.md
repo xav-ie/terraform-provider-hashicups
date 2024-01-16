@@ -67,6 +67,14 @@ To generate or update documentation, run `go generate`.
 In order to run the full suite of Acceptance tests, run `make testacc`.
 Testing should also happen on build, I think.
 
+### Release
+
+Releases go through automatic builds, linting, and testing of the code. For some reason, your linter (mine) may not work s in remote. Use this command to get lint errors:
+
+```sh
+docker run -t --rm -v $(pwd):/app -w /app golangci/golangci-lint:v1.55.2 golangci-lint run -v
+```
+
 *Note:* Acceptance tests create real resources, and often cost money to run.
 
 ```shell
