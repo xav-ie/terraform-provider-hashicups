@@ -64,8 +64,8 @@ To use the provider locally, move/merge the `./.terraformrc` file provided into 
 To generate or update documentation, run `go generate`.
 
 ### Testing
-<!-- TODO: what kind of acceptance tests are these? -->
 In order to run the full suite of Acceptance tests, run `make testacc`.
+Testing should also happen on build, I think.
 
 *Note:* Acceptance tests create real resources, and often cost money to run.
 
