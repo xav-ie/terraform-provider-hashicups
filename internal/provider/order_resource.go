@@ -32,6 +32,29 @@ type orderResource struct {
 	client *hashicups.Client
 }
 
+// orderResourceModel maps the resource schema data.
+type orderResourceModel struct {
+	ID          types.String     `tfsdk:"id"`
+	Items       []orderItemModel `tfsdk:"items"`
+	LastUpdated types.String     `tfsdk:"last_updated"`
+}
+
+// orderItemModel maps order item data.
+type orderItemModel struct {
+	Coffee   orderItemCoffeeModel `tfsdk:"coffee"`
+	Quantity types.Int64          `tfsdk:"quantity"`
+}
+
+// orderItemCoffeeModel maps coffee order item data.
+type orderItemCoffeeModel struct {
+	ID          types.Int64   `tfsdk:"id"`
+	Name        types.String  `tfsdk:"name"`
+	Teaser      types.String  `tfsdk:"teaser"`
+	Description types.String  `tfsdk:"description"`
+	Price       types.Float64 `tfsdk:"price"`
+	Image       types.String  `tfsdk:"image"`
+}
+
 // Metadata returns the resource type name.
 func (r *orderResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_order"
@@ -43,9 +66,6 @@ func (r *orderResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
-				// somehow, this prevents this being marked as computed and keep old value.
-				// is this safe? I guess that is why it is modifier and it depends... :/
-				// very tricky!
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -90,42 +110,27 @@ func (r *orderResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 	}
 }
 
-// orderResourceModel maps the resource schema data.
-type orderResourceModel struct {
-	ID          types.String     `tfsdk:"id"`
-	Items       []orderItemModel `tfsdk:"items"`
-	LastUpdated types.String     `tfsdk:"last_updated"`
-}
+// Configure adds the provider configured client to the resource.
+func (r *orderResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
 
-// orderItemModel maps order item data.
-type orderItemModel struct {
-	Coffee   orderItemCoffeeModel `tfsdk:"coffee"`
-	Quantity types.Int64          `tfsdk:"quantity"`
-}
+	client, ok := req.ProviderData.(*hashicups.Client)
 
-// orderItemCoffeeModel maps coffee order item data.
-type orderItemCoffeeModel struct {
-	ID          types.Int64   `tfsdk:"id"`
-	Name        types.String  `tfsdk:"name"`
-	Teaser      types.String  `tfsdk:"teaser"`
-	Description types.String  `tfsdk:"description"`
-	Price       types.Float64 `tfsdk:"price"`
-	Image       types.String  `tfsdk:"image"`
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Data Source Configure Type",
+			fmt.Sprintf("Expected *hashicups.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+
+		return
+	}
+
+	r.client = client
 }
 
 // Create a new resource.
-// The create method follows these steps:
-//  1. Checks whether the API Client is configured. If not, the resource responds with an error.
-//  2. Retrieves values from the plan. The function will attempt to retrieve values from the plan
-//     and convert it to an orderResourceModel.
-//  3. Generates an API request body from the plan values. The function loops through each plan
-//     item and maps it to a hashicups.OrderItem. This is what the API client needs to create a
-//     new order.
-//  4. Creates a new order. The function invokes the API client's CreateOrder method.
-//  5. Maps response body to resource schema attributes. After the function creates an order, it
-//     maps the hashicups.Order response to []OrderItem so the provider can update the Terraform
-//     state.
-//  6. Sets Terraform's state with the new order's details.
 func (r *orderResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	// Retrieve values from plan
 	var plan orderResourceModel
@@ -182,17 +187,6 @@ func (r *orderResource) Create(ctx context.Context, req resource.CreateRequest, 
 }
 
 // Read resource information.
-// The read function follows these steps:
-//  1. Gets the current state. If it is unable to, the provider responds with an error.
-//  2. Retrieves the order ID from Terraform's state.
-//  3. Retrieves the order details from the client. The function invokes the API client's GetOrder
-//     method with the order ID.
-//  4. Maps the response body to resource schema attributes. After the function retrieves the
-//     order, it maps the hashicups.Order response to []OrderItem so the provider can update the
-//     Terraform state.
-//  5. Set Terraform's state with the order's details.
-//
-// hmmm. it seems like create and read do almost the same thing
 func (r *orderResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	// Get current state
 	var state orderResourceModel
@@ -236,22 +230,6 @@ func (r *orderResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 }
 
-// Update updates the resource and sets the updated Terraform state on success.
-// The update method follows these steps:
-//  1. Retrieves values from the plan. The method will attempt to retrieve values from the plan
-//     and convert it to an orderResourceModel. The model includes the order's id attribute,
-//     which specifies which order to update.
-//  2. Generates an API request body from the plan values. The method loops through each plan item
-//     and maps it to a hashicups.OrderItem. This is what the API client needs to update an
-//     existing order.
-//  3. Updates the order. The method invokes the API client's UpdateOrder method with the order's
-//     ID and OrderItems.
-//  4. Maps the response body to resource schema attributes. After the method updates the order,
-//     it maps the hashicups.Order response to []OrderItem so the provider can update the Terraform
-//     state.
-//  5. Sets the LastUpdated attribute. The method sets the Order's LastUpdated attribute to the
-//     current system time.
-//  6. Sets Terraform's state with the updated order.
 func (r *orderResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	// Retrieve values from plan
 	var plan orderResourceModel
@@ -317,11 +295,6 @@ func (r *orderResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 }
 
-// Delete deletes the resource and removes the Terraform state on success.
-// The delete method follows these steps:
-//  1. Retrieves values from the state. The method will attempt to retrieve values from the state
-//     and convert it to an Order struct (defined in models.go).
-//  2. Deletes an existing order. The method invokes the API client's DeleteOrder method.
 func (r *orderResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// Retrieve values from state
 	var state orderResourceModel
@@ -342,27 +315,8 @@ func (r *orderResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 	}
 }
 
-// Configure adds the provider configured client to the resource.
-func (r *orderResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	if req.ProviderData == nil {
-		return
-	}
-
-	client, ok := req.ProviderData.(*hashicups.Client)
-
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *hashicups.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-
-		return
-	}
-
-	r.client = client
-}
-
 func (r *orderResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Retrieve import ID and save to id attribute
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
+
