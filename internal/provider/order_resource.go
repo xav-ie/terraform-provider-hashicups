@@ -316,7 +316,28 @@ func (r *orderResource) Update(ctx context.Context, req resource.UpdateRequest, 
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
+// The delete method follows these steps:
+//  1. Retrieves values from the state. The method will attempt to retrieve values from the state
+//     and convert it to an Order struct (defined in models.go).
+//  2. Deletes an existing order. The method invokes the API client's DeleteOrder method.
 func (r *orderResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	// Retrieve values from state
+	var state orderResourceModel
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Delete existing order
+	err := r.client.DeleteOrder(state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Deleting HashiCups Order",
+			"Could not delete order, unexpected error: "+err.Error(),
+		)
+		return
+	}
 }
 
 // Configure adds the provider configured client to the resource.
