@@ -63,43 +63,55 @@ func (r *orderResource) Metadata(_ context.Context, req resource.MetadataRequest
 // Schema defines the schema for the resource.
 func (r *orderResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Manages an order.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Description: "Numeric identifier of the order.",
+				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"last_updated": schema.StringAttribute{
-				Computed: true,
+				Description: "Timestamp of the last Terraform update of the order.",
+				Computed:    true,
 			},
 			"items": schema.ListNestedAttribute{
-				Required: true,
+				Description: "List of items in the order.",
+				Required:    true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"quantity": schema.Int64Attribute{
-							Required: true,
+							Description: "Count of this item in the order.",
+							Required:    true,
 						},
 						"coffee": schema.SingleNestedAttribute{
-							Required: true,
+							Description: "Coffee item in the order.",
+							Required:    true,
 							Attributes: map[string]schema.Attribute{
 								"id": schema.Int64Attribute{
-									Required: true,
+									Description: "Numeric identifier of the coffee.",
+									Required:    true,
 								},
 								"name": schema.StringAttribute{
-									Computed: true,
+									Description: "Product name of the coffee.",
+									Computed:    true,
 								},
 								"teaser": schema.StringAttribute{
-									Computed: true,
+									Description: "Fun tagline for the coffee.",
+									Computed:    true,
 								},
 								"description": schema.StringAttribute{
-									Computed: true,
+									Description: "Product description of the coffee.",
+									Computed:    true,
 								},
 								"price": schema.Float64Attribute{
-									Computed: true,
+									Description: "Suggested cost of the coffee.",
+									Computed:    true,
 								},
 								"image": schema.StringAttribute{
-									Computed: true,
+									Description: "URI for an image of the coffee.",
+									Computed:    true,
 								},
 							},
 						},

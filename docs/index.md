@@ -3,18 +3,21 @@
 page_title: "hashicups Provider"
 subcategory: ""
 description: |-
-  
+  Interact with HashiCups.
 ---
 
 # hashicups Provider
 
-
+Interact with HashiCups.
 
 ## Example Usage
 
 ```terraform
-provider "scaffolding" {
-  # example configuration here
+# Configuration-based authentication
+provider "hashicups" {
+  username = "education"
+  password = "test123"
+  host     = "http://localhost:19090"
 }
 ```
 
@@ -23,6 +26,6 @@ provider "scaffolding" {
 
 ### Optional
 
-- `host` (String)
-- `password` (String, Sensitive)
-- `username` (String)
+- `host` (String) URI for HashiCups API. May also be provided via HASHICUPS_HOST environment variable.
+- `password` (String, Sensitive) Password for HashiCups API. May also be provided via HASHICUPS_PASSWORD environment variable.
+- `username` (String) Username for HashiCups API. May also be provided via HASHICUPS_USERNAME environment variable.
