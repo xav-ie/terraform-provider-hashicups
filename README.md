@@ -49,12 +49,19 @@ Fill this in for each provider
 
 ## Developing the Provider
 
-If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (see [Requirements](#requirements) above).
+Just enter a development shell with `nix develop` which will provide `go`, `terraform`, and is the same environment that should be used in production to build the provider.
+
+If you wish to use `zsh` as the shell, `nix develop --command zsh`.
+
+## Compiling
+`nix build` should work (it does not, yet)!
 
 To compile the provider, run `go install`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
 
+<!-- TODO: this should be a pre-commit hook -->
 To generate or update documentation, run `go generate`.
 
+<!-- TODO: what kind of acceptance tests are these? -->
 In order to run the full suite of Acceptance tests, run `make testacc`.
 
 *Note:* Acceptance tests create real resources, and often cost money to run.
