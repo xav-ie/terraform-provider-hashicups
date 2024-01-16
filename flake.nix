@@ -34,10 +34,10 @@
             # details. Normally one can build with a fake sha256 and rely on native Go
             # mechanisms to tell you what the hash should be or determine what
             # it should be "out-of-band" with other tooling (eg. gomod2nix).
-            # To begin with it is recommended to set this, but one must
+            # To begin with it is recommended to set this, but one MUST
             # remeber to bump this hash when your dependencies change.
-            #vendorSha256 = pkgs.lib.fakeSha256;
-            vendorSha256 = "sha256-rGVFNYTJXj5+rR7ZxN2mGFz4ja0QGcofg2Ml0YjNeE4=";
+            # vendorSha256 = pkgs.lib.fakeSha256;
+            vendorSha256 = "sha256-9zFnzE6DyQoEWJnVNhzuF6O3H6Sphmeh4MR7TsYxg/k=";
           };
         });
 
