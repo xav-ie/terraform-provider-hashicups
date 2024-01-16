@@ -53,14 +53,17 @@ Just enter a development shell with `nix develop` which will provide `go`, `terr
 
 If you wish to use `zsh` as the shell, `nix develop --command zsh`.
 
-## Compiling
-`nix build` should work (it does not, yet)!
+### Compiling
+`nix build` will put a binary into `./result/bin`
 
-To compile the provider, run `go install`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
+### Local use
+To use the provider locally, move/merge the `./.terraformrc` file provided into `~/.terrformrc`
 
+### Documentation
 <!-- TODO: this should be a pre-commit hook -->
 To generate or update documentation, run `go generate`.
 
+### Testing
 <!-- TODO: what kind of acceptance tests are these? -->
 In order to run the full suite of Acceptance tests, run `make testacc`.
 
