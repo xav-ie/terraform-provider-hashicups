@@ -331,4 +331,3 @@ func (r *orderResource) ImportState(ctx context.Context, req resource.ImportStat
 	// Retrieve import ID and save to id attribute
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
-

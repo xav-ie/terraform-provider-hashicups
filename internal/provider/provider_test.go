@@ -28,4 +28,3 @@ var (
 		"hashicups": providerserver.NewProtocol6WithError(New("test")()),
 	}
 )
-

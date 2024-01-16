@@ -212,4 +212,3 @@ func (p *hashicupsProvider) Resources(_ context.Context) []func() resource.Resou
 		NewOrderResource,
 	}
 }
-
