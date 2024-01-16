@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp-demoapp/hashicups-client-go"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -39,6 +41,12 @@ func (r *orderResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
+				// somehow, this prevents this being marked as computed and keep old value.
+				// is this safe? I guess that is why it is modifier and it depends... :/
+				// very tricky!
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"last_updated": schema.StringAttribute{
 				Computed: true,
@@ -227,7 +235,84 @@ func (r *orderResource) Read(ctx context.Context, req resource.ReadRequest, resp
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
+// The update method follows these steps:
+//  1. Retrieves values from the plan. The method will attempt to retrieve values from the plan
+//     and convert it to an orderResourceModel. The model includes the order's id attribute,
+//     which specifies which order to update.
+//  2. Generates an API request body from the plan values. The method loops through each plan item
+//     and maps it to a hashicups.OrderItem. This is what the API client needs to update an
+//     existing order.
+//  3. Updates the order. The method invokes the API client's UpdateOrder method with the order's
+//     ID and OrderItems.
+//  4. Maps the response body to resource schema attributes. After the method updates the order,
+//     it maps the hashicups.Order response to []OrderItem so the provider can update the Terraform
+//     state.
+//  5. Sets the LastUpdated attribute. The method sets the Order's LastUpdated attribute to the
+//     current system time.
+//  6. Sets Terraform's state with the updated order.
 func (r *orderResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	// Retrieve values from plan
+	var plan orderResourceModel
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Generate API request body from plan
+	var hashicupsItems []hashicups.OrderItem
+	for _, item := range plan.Items {
+		hashicupsItems = append(hashicupsItems, hashicups.OrderItem{
+			Coffee: hashicups.Coffee{
+				ID: int(item.Coffee.ID.ValueInt64()),
+			},
+			Quantity: int(item.Quantity.ValueInt64()),
+		})
+	}
+
+	// Update existing order
+	_, err := r.client.UpdateOrder(plan.ID.ValueString(), hashicupsItems)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Updating HashiCups Order",
+			"Could not update order, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// Fetch updated items from GetOrder as UpdateOrder items are not
+	// populated.
+	order, err := r.client.GetOrder(plan.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Reading HashiCups Order",
+			"Could not read HashiCups order ID "+plan.ID.ValueString()+": "+err.Error(),
+		)
+		return
+	}
+
+	// Update resource state with updated items and timestamp
+	plan.Items = []orderItemModel{}
+	for _, item := range order.Items {
+		plan.Items = append(plan.Items, orderItemModel{
+			Coffee: orderItemCoffeeModel{
+				ID:          types.Int64Value(int64(item.Coffee.ID)),
+				Name:        types.StringValue(item.Coffee.Name),
+				Teaser:      types.StringValue(item.Coffee.Teaser),
+				Description: types.StringValue(item.Coffee.Description),
+				Price:       types.Float64Value(item.Coffee.Price),
+				Image:       types.StringValue(item.Coffee.Image),
+			},
+			Quantity: types.Int64Value(int64(item.Quantity)),
+		})
+	}
+	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+
+	diags = resp.State.Set(ctx, plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
